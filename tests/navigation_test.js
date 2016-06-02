@@ -6,7 +6,11 @@ describe('Navigation specs', () => {
 
   beforeEach(() => {
     xhr = sinon.useFakeXMLHttpRequest()
-    xhr.onCreate = (req) => { requests.push(req) }
+    xhr.onCreate = (req) => { 
+      console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+      console.log("FUI CHAMADO DO ON CREATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      requests.push(req)
+    }
     requests = []
     Locflow.setDefaultRoute(Navigation.onVisit, Navigation.onLeave)
   })

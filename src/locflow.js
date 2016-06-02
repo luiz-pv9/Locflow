@@ -8,6 +8,16 @@ const EVENT_READY = 'ready'
 const EVENT_TRANSITION = 'transition'
 const EVENT_BEFORE_VISIT = 'before:visit'
 
+class LocflowDef extends EventEmitter {
+  constructor() {
+    super()
+    this.routes = {}
+    this.handlers = []
+    this.defaultRoute = {}
+    this.currentRoute = null
+  }
+}
+
 export const Locflow = new EventEmitter() 
 Locflow.version = '0.0.1'
 
