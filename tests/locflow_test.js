@@ -1,4 +1,5 @@
-import {Locflow} from '../src/locflow'
+import {LocflowDef} from '../src/locflow'
+const Locflow = new LocflowDef()
 
 describe('Locflow', () => {
   it('is an object', () => {
@@ -105,7 +106,6 @@ describe('Locflow', () => {
 
     it('triggers `transition` event when visiting a page', () => {
       let onTransition = sinon.spy((from, to) => {
-        console.log("from", from, "to", to)
         expect(from).to.be.ok
         expect(to).to.match(/about/)
         expect(to).not.to.eq(from)

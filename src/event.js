@@ -1,4 +1,3 @@
-
 /*
 ** The `Event` class implements a very small subset of browser's native
 ** CustomEvent.

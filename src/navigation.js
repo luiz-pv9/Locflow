@@ -7,7 +7,6 @@ export const Navigation = {
   ** 
   */
   onVisit: function(path) {
-    console.log("WAS I CALLED?????????")
     let req = Request.get(path)
   },
 

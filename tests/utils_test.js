@@ -242,4 +242,10 @@ describe('utils specs', () => {
       utils.removeElement(paragraph)
     })
   })
+
+  describe('.mergeHeaders', () => {
+    it('inserts meta tags in the header')
+    it('updates the conte of existing meta tags')
+    it('updates the title of the page')
+  })
 })

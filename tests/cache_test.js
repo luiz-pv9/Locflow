@@ -1,74 +1,79 @@
 import {Cache} from '../src/cache'
 
 describe('Cache specs', () => {
+  let cache
+  beforeEach(() => {
+    cache = new Cache()
+  })
+
   it('tracks values with set', () => {
-    expect(Cache.set('name', 'Luiz')).to.be.ok
-    expect(Cache.set('colors', ['red', 'blue'])).to.be.ok
-    expect(Cache.set('colors', {'msg': 'Hello'})).to.be.ok
+    expect(cache.set('name', 'Luiz')).to.be.ok
+    expect(cache.set('colors', ['red', 'blue'])).to.be.ok
+    expect(cache.set('colors', {'msg': 'Hello'})).to.be.ok
   })
 
   it('retreives values with get', () => {
-    Cache.set('name', 'Luiz')
+    cache.set('name', 'Luiz')
     // TODO: Create a separated test for `has` ?
-    expect(Cache.has('name')).to.be.true
-    expect(Cache.get('name')).to.eq('Luiz')
-    expect(Cache.has('something')).to.be.false
-    expect(Cache.get('something')).to.be.undefined
+    expect(cache.has('name')).to.be.true
+    expect(cache.get('name')).to.eq('Luiz')
+    expect(cache.has('something')).to.be.false
+    expect(cache.get('something')).to.be.undefined
   })
 
   it('expires a cache', () => {
-    Cache.set('name', 'Luiz')
-    Cache.expire('name')
-    expect(Cache.get('name')).to.be.undefined
+    cache.set('name', 'Luiz')
+    cache.expire('name')
+    expect(cache.get('name')).to.be.undefined
 
-    Cache.expire('something') // does nothing
+    cache.expire('something') // does nothing
   })
 
   it('expires a value with timeout', (done) => {
-    Cache.set('name', 'Luiz', {
+    cache.set('name', 'Luiz', {
       timeout: 10
     })
-    expect(Cache.get('name')).to.eq('Luiz')
+    expect(cache.get('name')).to.eq('Luiz')
     setTimeout(() => {
-      expect(Cache.get('name')).to.be.undefined
+      expect(cache.get('name')).to.be.undefined
       done()
     }, 12)
   })
 
   it('doesnt expire a value if we update the key', (done) => {
-    Cache.set('name', 'Luiz', { timeout: 10 })
-    expect(Cache.get('name')).to.eq('Luiz')
-    Cache.set('name', 'Paulo')
+    cache.set('name', 'Luiz', { timeout: 10 })
+    expect(cache.get('name')).to.eq('Luiz')
+    cache.set('name', 'Paulo')
     setTimeout(() => {
-      expect(Cache.get('name')).to.eq('Paulo')
+      expect(cache.get('name')).to.eq('Paulo')
       done()
     }, 12)
   })
 
   it('stores the timestamp of creation', () => {
-    let record = Cache.set('name', 'Luiz')
+    let record = cache.set('name', 'Luiz')
     expect(record.createdAt).to.be.ok
   })
 
   it('finds all caches in a namespace', () => {
-    Cache.set('user.name', 'Luiz')
-    Cache.set('user.email', 'luizpvasc@gmail.com')
-    let values = Cache.getAll('user')
+    cache.set('user.name', 'Luiz')
+    cache.set('user.email', 'luizpvasc@gmail.com')
+    let values = cache.getAll('user')
     expect(values).to.eql({'name': 'Luiz', 'email': 'luizpvasc@gmail.com'})
   })
 
   it('stores the properties of an object when calling it with the first argument', () => {
-    Cache.set({'browser': 'Firefox', 'name': 'Luiz'})
-    expect(Cache.get('browser')).to.eq('Firefox')
-    expect(Cache.get('name')).to.eq('Luiz')
+    cache.set({'browser': 'Firefox', 'name': 'Luiz'})
+    expect(cache.get('browser')).to.eq('Firefox')
+    expect(cache.get('name')).to.eq('Luiz')
   })
 
   it('clears all caches with `clearAll`', () => {
-    Cache.set('name', 'Luiz')
-    Cache.set('age', 10)
-    Cache.clearAll()
-    expect(Cache.has('name')).to.be.false
-    expect(Cache.has('age')).to.be.false
+    cache.set('name', 'Luiz')
+    cache.set('age', 10)
+    cache.clearAll()
+    expect(cache.has('name')).to.be.false
+    expect(cache.has('age')).to.be.false
   })
 
   it('triggers `set` when data is stored', () => {
@@ -76,8 +81,8 @@ describe('Cache specs', () => {
       expect(key).to.eq('name')
       expect(value).to.eq('luiz')
     })
-    Cache.on('set', onSet)
-    Cache.set('name', 'luiz')
+    cache.on('set', onSet)
+    cache.set('name', 'luiz')
     expect(onSet.called).to.be.true
   })
 
@@ -86,9 +91,9 @@ describe('Cache specs', () => {
       expect(key).to.eq('name')
       expect(value).to.eq('luiz')
     })
-    Cache.on('remove', onRemove)
-    Cache.set('name', 'luiz')
-    Cache.remove('name')
+    cache.on('remove', onRemove)
+    cache.set('name', 'luiz')
+    cache.remove('name')
     expect(onRemove.called).to.be.true
   })
 

@@ -1,5 +1,8 @@
 import {Navigation} from '../src/navigation'
-import {Locflow} from '../src/locflow'
+import {LocflowDef} from '../src/locflow'
+
+// Create our own Locflow isolated version :)
+const Locflow = new LocflowDef()
 
 describe('Navigation specs', () => {
   let xhr, requests
@@ -7,8 +10,6 @@ describe('Navigation specs', () => {
   beforeEach(() => {
     xhr = sinon.useFakeXMLHttpRequest()
     xhr.onCreate = (req) => { 
-      console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      console.log("FUI CHAMADO DO ON CREATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       requests.push(req)
     }
     requests = []
@@ -22,12 +23,24 @@ describe('Navigation specs', () => {
       expect(requests[0].url).to.eq('/home')
     })
 
-    it('merges the response header to the current header')
-    it('adds new `link` tags to the header')
-    it('adds new `script` tags to the header')
+    it('merges meta tags the response header to the current header', () => {
+      Locflow.visit('/home')
+      requests[0].respond(200, {}, `
+        <html>
+          <head>
+            <meta name="my-tag" content="my-content" />
+            <meta name="my-other-tag" content="my-other-content" />
+          </head>
+          <body>
+          </body>
+        </html>
+      `)
+      let metaTags = document.getElementsByTagName('meta')
+    })
+
+    it('updates the title of the page from the <title> tag')
     it('throws an error if the element with `data-permanent` doesnt have an id')
     it('copies elements with `data-permanent` attribute to the new page')
-
     it('prioritizes user-define routes')
   })
 })
