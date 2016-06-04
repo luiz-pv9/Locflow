@@ -3,7 +3,14 @@ import {LocflowDef} from '../src/locflow'
 import Url from '../src/url'
 const Locflow = new LocflowDef()
 
-describe('Visit specs', () => {
+describe.only('Visit specs', () => {
+  let xhr, requests
+  beforeEach(() => {
+    xhr = sinon.useFakeXMLHttpRequest()
+    xhr.onCreate = (req) => { requests.push(req) }
+    requests = []
+  })
+
   it('is a function class', () => {
     expect(Visit).to.be.a('function')
   })
@@ -24,6 +31,16 @@ describe('Visit specs', () => {
     expect(visit.state).to.eq('started')
   })
 
+  it('sends a get request on the start method', () => {
+    let visit = Locflow.visit('/home')
+    visit.start()
+    expect(requests).to.have.length(1)
+    expect(requests[0].url).to.match(/\/home/)
+    expect(visit.request).to.be.ok
+  })
+
+  it('abort the existing visit if a new one is requested')
+
   it('completes the visit with the `complete` method', () => {
     let visit = Locflow.visit('/home')
     visit.complete()
@@ -34,6 +51,20 @@ describe('Visit specs', () => {
     let visit = Locflow.visit('/home')
     visit.fail()
     expect(visit.state).to.eq('failed')
+  })
+
+  it('aborts the visit with the `abort` method', () => {
+    let visit = Locflow.visit('/home')
+    visit.abort()
+    expect(visit.state).to.eq('aborted')
+  })
+
+  it('aborts the request if already started', () => {
+    let visit = Locflow.visit('/home')
+    visit.start() // sends the request
+    visit.abort()
+    expect(visit.state).to.eq('aborted')
+    expect(visit.request.aborted).to.be.true
   })
 
   it('stores the time interval needed to complete the visit', (done) => {
@@ -70,8 +101,19 @@ describe('Visit specs', () => {
   })
 
   describe('lifecycle', () => {
-    it('calls visitProposed in the adapter')
-    it('calls visitRequestStarted in the adapter')
+    it('calls visitProposed in the adapter', () => {
+      Locflow.adapter.visitProposed = sinon.spy(Locflow.adapter.visitProposed)
+      let visit = Locflow.visit('/home')
+      expect(Locflow.adapter.visitProposed.called).to.be.true
+    })
+
+    it('calls visitRequestStarted in the adapter', () => {
+      Locflow.adapter.visitRequestStarted = sinon.spy(Locflow.adapter.visitRequestStarted)
+      let visit = Locflow.visit('/home')
+      visit.start()
+      expect(Locflow.adapter.visitRequestStarted.called).to.be.true
+    })
+
     it('calls visitRequestProgressed in the adapter')
     it('calls visitRequestCompleted in the adapter')
     it('calls visitCompleted in the adapter')

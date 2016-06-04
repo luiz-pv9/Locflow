@@ -10,6 +10,10 @@ describe('Locflow', () => {
     expect(Locflow.version).to.be.ok
   })
 
+  it('has a renderer', () => {
+    expect(Locflow.renderer).to.be.ok
+  })
+
   describe('.when', () => {
     beforeEach(() => {
       Locflow.clearRoutes()

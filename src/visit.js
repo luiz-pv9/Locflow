@@ -1,4 +1,5 @@
 import Url from './url'
+import {Request} from './request'
 
 export class Visit {
   constructor(locflow, url, opts = {}) {
@@ -7,11 +8,18 @@ export class Visit {
     this.action = opts.action || Visit.ADVANCE
     this.state = 'initialized'
     this.timing = {}
+    this.propose()
+  }
+
+  propose() {
+    this.locflow.adapter.visitProposed(this)
   }
 
   start() {
     this.state = 'started'
     this._recordTiming('start')
+    this.locflow.adapter.visitRequestStarted(this)
+    this.request = Request.GET(this.url)
   }
 
   complete() {
@@ -21,6 +29,11 @@ export class Visit {
 
   fail() {
     this.state = 'failed'
+  }
+
+  abort() {
+    this.state = 'aborted'
+    if(this.request) this.request.abort()
   }
 
   duration() {

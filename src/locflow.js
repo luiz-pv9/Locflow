@@ -2,6 +2,8 @@ import EventEmitter from 'events'
 import Url from './url'
 import {log} from './log'
 import {Visit} from './visit'
+import {Renderer} from './renderer'
+import {BrowserAdapter} from './browser_adapter'
 import Event from './event'
 import * as utils from './utils'
 
@@ -20,6 +22,8 @@ export class LocflowDef extends EventEmitter {
     }
     this.currentRoute = null
     this.version = '0.0.1'
+    this.renderer = new Renderer()
+    this.adapter = new BrowserAdapter()
   }
 
   /*
