@@ -4,4 +4,7 @@ export class BrowserAdapter {
 
   visitRequestStarted(visit) {
   }
+
+  visitRequestAborted(visit) {
+  }
 }

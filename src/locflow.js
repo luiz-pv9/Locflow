@@ -3,6 +3,8 @@ import Url from './url'
 import {log} from './log'
 import {Visit} from './visit'
 import {Renderer} from './renderer'
+import {Snapshot} from './snapshot'
+import {Cache} from './cache'
 import {BrowserAdapter} from './browser_adapter'
 import Event from './event'
 import * as utils from './utils'
@@ -20,9 +22,11 @@ export class LocflowDef extends EventEmitter {
       onVisit: function() {},
       onLeave: function() {}
     }
+    this.cache = new Cache()
     this.currentRoute = null
-    this.version = '0.0.1'
     this.renderer = new Renderer()
+    this.snapshot = new Snapshot(this.cache, this.renderer)
+    this.version = '0.0.1'
     this.adapter = new BrowserAdapter()
   }
 
@@ -148,6 +152,3 @@ export class LocflowDef extends EventEmitter {
     this.handlers.length = 0
   }
 }
-
-export const Locflow = new LocflowDef()
-window.addEventListener('load', () => { Locflow.emit(EVENT_READY) })

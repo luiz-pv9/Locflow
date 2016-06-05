@@ -4,10 +4,10 @@ import {Request} from './request'
 export class Visit {
   constructor(locflow, url, opts = {}) {
     this.locflow = locflow
-    this.url = new Url(url)
-    this.action = opts.action || Visit.ADVANCE
-    this.state = 'initialized'
-    this.timing = {}
+    this.url     = new Url(url)
+    this.action  = opts.action || Visit.ADVANCE
+    this.state   = 'initialized'
+    this.timing  = {}
     this.propose()
   }
 
@@ -20,6 +20,20 @@ export class Visit {
     this._recordTiming('start')
     this.locflow.adapter.visitRequestStarted(this)
     this.request = Request.GET(this.url)
+    this.request.on('error',   this._onRequestError.bind(this))
+    this.request.on('success', this._onRequestSuccess.bind(this))
+    this.request.on('timeout', this._onRequestTimeout.bind(this))
+  }
+
+  _onRequestSuccess(html, statusCode) {
+    this.locflow.adapter.visitRequestCompleted()
+  }
+
+  _onRequestError(html, statusCode) {
+    this.locflow.adapter.visitRequestFailedWithStatusCode(this, statusCode)
+  }
+
+  _onRequestTimeout() {
   }
 
   complete() {
@@ -34,6 +48,7 @@ export class Visit {
   abort() {
     this.state = 'aborted'
     if(this.request) this.request.abort()
+    this.locflow.adapter.visitRequestAborted(this)
   }
 
   duration() {

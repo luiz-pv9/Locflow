@@ -299,6 +299,191 @@ function isUndefined(arg) {
 }
 
 },{}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BrowserAdapter = exports.BrowserAdapter = function () {
+  function BrowserAdapter() {
+    _classCallCheck(this, BrowserAdapter);
+  }
+
+  _createClass(BrowserAdapter, [{
+    key: "visitProposed",
+    value: function visitProposed(visit) {}
+  }, {
+    key: "visitRequestStarted",
+    value: function visitRequestStarted(visit) {}
+  }, {
+    key: "visitRequestAborted",
+    value: function visitRequestAborted(visit) {}
+  }]);
+
+  return BrowserAdapter;
+}();
+
+},{}],3:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Cache = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _events = require('events');
+
+var _events2 = _interopRequireDefault(_events);
+
+var _utils = require('./utils');
+
+var utils = _interopRequireWildcard(_utils);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var EVENT_SET = 'set';
+var EVENT_REMOVE = 'remove';
+var EVENT_REMOVE_ALL = 'remove:all';
+
+var Cache = exports.Cache = function (_EventEmitter) {
+  _inherits(Cache, _EventEmitter);
+
+  function Cache() {
+    _classCallCheck(this, Cache);
+
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Cache).call(this));
+
+    _this.data = {};
+    return _this;
+  }
+
+  _createClass(Cache, [{
+    key: 'set',
+    value: function set(key, value, opts) {
+      var _this2 = this;
+
+      // If the user specified an object in the first argument, we track each key
+      // as if they're tracking each separated value.
+      if (utils.isObject(key)) {
+        var _ret = function () {
+          var data = key;
+          return {
+            v: Object.keys(data).forEach(function (key) {
+              _this2.set(key, data[key], opts);
+            })
+          };
+        }();
+
+        if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+      }
+
+      var previousRecord = this.getRecord(key);
+      if (previousRecord && previousRecord.timeout) {
+        clearTimeout(previousRecord.timeout);
+      }
+
+      var record = this.data[key] = { value: value, createdAt: new Date().getTime() };
+      if (opts && opts.timeout) {
+        record.timeout = setTimeout(function () {
+          _this2.expire(key);
+        }, opts.timeout);
+      }
+
+      this.emit(EVENT_SET, key, value, record);
+      return record;
+    }
+  }, {
+    key: 'get',
+    value: function get(key) {
+      var record = this.getRecord(key);
+      if (record) return record.value;
+    }
+  }, {
+    key: 'getRecord',
+    value: function getRecord(key) {
+      return this.data[key];
+    }
+  }, {
+    key: 'getInNamespace',
+    value: function getInNamespace(namespace) {
+      var _this3 = this;
+
+      namespace += '.';
+      var keys = Object.keys(this.data);
+      var values = {};
+      keys.forEach(function (key) {
+        if (key.indexOf(namespace) === 0) {
+          var normalKey = key.replace(namespace, '');
+          values[normalKey] = _this3.get(key);
+        }
+      });
+      return values;
+    }
+  }, {
+    key: 'countInNamespace',
+    value: function countInNamespace(namespace) {
+      return Object.keys(this.getInNamespace(namespace)).length;
+    }
+  }, {
+    key: 'has',
+    value: function has(key) {
+      return this.get(key) != null;
+    }
+  }, {
+    key: 'remove',
+    value: function remove(key) {
+      this.emit(EVENT_REMOVE, key, this.get(key));
+      delete this.data[key];
+    }
+  }, {
+    key: 'expire',
+    value: function expire(key) {
+      return this.remove(key);
+    }
+  }, {
+    key: 'clearAll',
+    value: function clearAll(key) {
+      for (var _key in this.data) {
+        delete this.data[_key];
+      }
+    }
+  }]);
+
+  return Cache;
+}(_events2.default);
+
+},{"./utils":14,"events":1}],4:[function(require,module,exports){
+'use strict';
+
+var CSRF = {
+    /*
+    ** Returns the current value for the CSRF token present in the meta tag.
+    */
+    value: function value() {
+        return '';
+    }
+};
+
+module.exports = CSRF;
+
+},{}],5:[function(require,module,exports){
 'use strict';
 
 /*
@@ -443,7 +628,7 @@ exports.encodeJsonToQueryString = function (data) {
   return qs;
 };
 
-},{}],3:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -481,13 +666,23 @@ var Event = function () {
 
 exports.default = Event;
 
-},{}],4:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+'use strict';
+
+var _locflow = require('./locflow');
+
+var Locflow = window.Locflow = new _locflow.LocflowDef();
+window.addEventListener('load', function () {
+  Locflow.emit(EVENT_READY);
+});
+
+},{"./locflow":8}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Locflow = exports.LocflowDef = undefined;
+exports.LocflowDef = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -500,6 +695,16 @@ var _url = require('./url');
 var _url2 = _interopRequireDefault(_url);
 
 var _log = require('./log');
+
+var _visit = require('./visit');
+
+var _renderer = require('./renderer');
+
+var _snapshot = require('./snapshot');
+
+var _cache = require('./cache');
+
+var _browser_adapter = require('./browser_adapter');
 
 var _event = require('./event');
 
@@ -537,8 +742,12 @@ var LocflowDef = exports.LocflowDef = function (_EventEmitter) {
       onVisit: function onVisit() {},
       onLeave: function onLeave() {}
     };
+    _this.cache = new _cache.Cache();
     _this.currentRoute = null;
+    _this.renderer = new _renderer.Renderer();
+    _this.snapshot = new _snapshot.Snapshot(_this.cache, _this.renderer);
     _this.version = '0.0.1';
+    _this.adapter = new _browser_adapter.BrowserAdapter();
     return _this;
   }
 
@@ -638,6 +847,8 @@ var LocflowDef = exports.LocflowDef = function (_EventEmitter) {
   }, {
     key: 'visit',
     value: function visit(path, opts) {
+      return new _visit.Visit(this, path, opts);
+
       var url = new _url2.default(path);
       if (this.currentRoute) this.currentRoute.onLeave(url.path);
       var route = this.getRoute(url.path) || this.defaultRoute;
@@ -699,12 +910,7 @@ var LocflowDef = exports.LocflowDef = function (_EventEmitter) {
   return LocflowDef;
 }(_events2.default);
 
-var Locflow = exports.Locflow = new LocflowDef();
-window.addEventListener('load', function () {
-  Locflow.emit(EVENT_READY);
-});
-
-},{"./event":3,"./log":5,"./url":6,"./utils":7,"events":1}],5:[function(require,module,exports){
+},{"./browser_adapter":2,"./cache":3,"./event":6,"./log":9,"./renderer":10,"./snapshot":12,"./url":13,"./utils":14,"./visit":15,"events":1}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -721,7 +927,366 @@ function log() {
   console.log.apply(console, args);
 }
 
-},{}],6:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Renderer = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _utils = require('./utils');
+
+var utils = _interopRequireWildcard(_utils);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var permanentWithNoIDError = new Error('permanent element must have an id');
+
+var Renderer = exports.Renderer = function () {
+  function Renderer() {
+    _classCallCheck(this, Renderer);
+  }
+
+  _createClass(Renderer, [{
+    key: 'body',
+    value: function body() {
+      return document.body;
+    }
+  }, {
+    key: 'cloneBody',
+    value: function cloneBody() {
+      return document.body.cloneNode(true);
+    }
+  }, {
+    key: 'permanentElements',
+    value: function permanentElements() {
+      var elements = document.querySelectorAll('*[data-permanent]:not([data-shallow])');
+      for (var i = 0; i < elements.length; i++) {
+        if (!elements[i].id) throw new Error("Element with data-permanent must have an ID");
+      }
+      return elements;
+    }
+  }, {
+    key: 'removePermanentElements',
+    value: function removePermanentElements() {
+      var elements = this.permanentElements();
+      for (var i = 0; i < elements.length; i++) {
+        var element = elements[i];
+        var shallowCopy = element.cloneNode(false);
+        shallowCopy.setAttribute('data-shallow', '1');
+        element.parentNode.replaceChild(shallowCopy, element);
+      }
+      return elements;
+    }
+  }, {
+    key: 'mergePermanentElements',
+    value: function mergePermanentElements(elements) {
+      for (var i = 0; i < elements.length; i++) {
+        this.replacePermanent(elements[i]);
+      }
+    }
+  }, {
+    key: 'replacePermanent',
+    value: function replacePermanent(element) {
+      if (!element.id) throw permanentWithNoIDError;
+      var target = document.getElementById(element.id);
+      return target.parentNode.replaceChild(element, target);
+    }
+  }]);
+
+  return Renderer;
+}();
+
+},{"./utils":14}],11:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Request = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+exports.setRequestTimeout = setRequestTimeout;
+exports.getRequestTimeout = getRequestTimeout;
+
+var _events = require('events');
+
+var _events2 = _interopRequireDefault(_events);
+
+var _csrf = require('./csrf');
+
+var _csrf2 = _interopRequireDefault(_csrf);
+
+var _utils = require('./utils');
+
+var utils = _interopRequireWildcard(_utils);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var EVENT_SERVER_ERROR = 'server_error';
+var EVENT_REDIRECT = 'redirect';
+var EVENT_UNKNOWN = 'unknown';
+var EVENT_TIMEOUT = 'timeout';
+var EVENT_SUCCESS = 'success';
+var EVENT_ERROR = 'error';
+
+/*
+** Status code the request must respond with in order for Reflinks to identify
+** it as a redirect. The status code 280 is defined nas 'Unknown', so it's used
+** as default. This is a variable rather than a constant because the user
+** can change the status code.
+*/
+var customRedirectStatus = 280;
+
+/*
+** Amount of time (in milliseconds) a request may take before it's considered 
+** as timeout.
+*/
+var requestTimeout = 4000;
+
+/*
+** Updates the requestTimeout variable to the specified amount. All requests
+** after this funciton call with have `amount` of time before timing out. It
+** should be specified in milliseconds.
+*/
+function setRequestTimeout(amount) {
+  requestTimeout = amount;
+}
+
+/*
+** Returns the current time for request timeout in milliseconds. 
+*/
+function getRequestTimeout() {
+  return requestTimeout;
+}
+
+/*
+** The 'send' function in the Request accept some options. This constant is the
+** default values if the user doesn't specify options.
+*/
+var defaultSendOptions = {
+  headers: {},
+  body: '',
+  withCredentials: true,
+  abortIfTimeout: false
+};
+
+/*
+** The Request class is responsible for sending HTTP requests and managing
+** events from the life cycle. It is possible to send multiple requests at
+** the same time (e.g. loading multiple targets).
+*/
+
+var Request = exports.Request = function (_EventEmitter) {
+  _inherits(Request, _EventEmitter);
+
+  /*
+  ** Constructor of the Request class. It excepts an http method and a url.
+  ** The url might be a string or an instance of the Url class.
+  */
+
+  function Request(method, url) {
+    _classCallCheck(this, Request);
+
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Request).call(this));
+
+    _this.method = method;
+    _this.url = url.toString();
+    _this.xhr = null;
+    return _this;
+  }
+
+  _createClass(Request, [{
+    key: 'abort',
+    value: function abort() {
+      if (!this.aborted && this.xhr) {
+        this.aborted = true;
+        this.xhr.abort();
+      }
+    }
+
+    /*
+    ** Instantiates a new XmlHttpRequests and sends the AJAX request. This
+    ** instance of Request will emit events as the xhr changes.
+    */
+
+  }, {
+    key: 'send',
+    value: function send(options) {
+      var _this2 = this;
+
+      options = utils.mergeObjects(options, defaultSendOptions);
+      var xhr = this.xhr = new XMLHttpRequest();
+      xhr.open(this.method, this.url, true);
+      xhr.setRequestHeader('Accept', 'text/html, application/xhtml+xml, application/xml');
+      xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      xhr.setRequestHeader('X-CSRF-TOKEN', _csrf2.default.value());
+      xhr.setRequestHeader('X-LOCFLOW', 'true');
+
+      // User defined custom headers
+      Object.keys(options.headers).forEach(function (key) {
+        xhr.setRequestHeader(key, options.headers[key]);
+      });
+
+      // withCredentials is a flag that indicates if cookies should be passed
+      // with the request.
+      xhr.withCredentials = options.withCredentials;
+
+      var xhrTimeout = setTimeout(function () {
+        if (_this2.aborted) return;
+        _this2.emit(EVENT_TIMEOUT);
+        if (options.abortIfTimeout) xhr.abort();
+      }, requestTimeout);
+
+      xhr.onerror = function () {
+        return _this2.emit(EVENT_SERVER_ERROR);
+      };
+      xhr.onreadystatechange = function () {
+        if (_this2.aborted) return;
+        if (xhr.readyState === 4) {
+          clearTimeout(xhrTimeout);
+          if (xhr.status === 200) {
+            _this2.emit(EVENT_SUCCESS, xhr.responseText, xhr.status, xhr);
+          } else if (xhr.status === customRedirectStatus) {
+            _this2.emit(EVENT_REDIRECT, xhr.responseText, xhr.status, xhr);
+          } else if (xhr.status < 200 || xhr.status >= 300) {
+            // Status 2XX are used for successful responses.
+            _this2.emit(EVENT_ERROR, xhr.responseText, xhr.status, xhr);
+          } else {
+            _this2.emit(EVENT_UNKNOWN, xhr.responseText, xhr.status, xhr);
+          }
+        }
+      };
+      xhr.send(options.body);
+      return this;
+    }
+  }]);
+
+  return Request;
+}(_events2.default);
+
+/*
+** The 'simple' function accept some options as the third parameter. This value 
+** is the default options if the user doesn't specify one.
+*/
+
+
+var defaultSimpleRequestOptions = {
+  success: function success() {},
+  error: function error() {},
+  redirect: function redirect() {},
+  timeout: function timeout() {}
+};
+
+/*
+** The 'simple' method offers an API for sending AJAX requests with a single
+** function call. This function is called by `get`. `post`, `put` and `delete`.
+*/
+Request.send = function (method, url, options) {
+  options = utils.mergeObjects(options, defaultSimpleRequestOptions);
+  var request = new Request(method, url);
+  request.on(EVENT_SUCCESS, options.success);
+  request.on(EVENT_ERROR, options.error);
+  request.on(EVENT_REDIRECT, options.redirect);
+  request.on(EVENT_TIMEOUT, options.timeout);
+  return request.send(options);
+};
+
+/*
+** Helper function to create a new request instance with 'GET' HTTP method.
+*/
+Request.get = Request.GET = function (url, options) {
+  return Request.send('GET', url, options);
+};
+
+/*
+** Helper function to create a new request instance with 'POST' HTTP method.
+*/
+Request.post = Request.POST = function (url, options) {
+  return Request.send('POST', url, options);
+};
+
+/*
+** Helper function to create a new request instance with 'PUT' HTTP method.
+*/
+Request.put = Request.PUT = function (url, options) {
+  return Request.send('PUT', url, options);
+};
+
+/*
+** Helper function to create a new request instance with 'DELETE' HTTP method.
+*/
+Request.delete = Request.DELETE = function (url, options) {
+  return Request.send('DELETE', url, options);
+};
+
+},{"./csrf":4,"./utils":14,"events":1}],12:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Snapshot = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _url = require('./url');
+
+var _url2 = _interopRequireDefault(_url);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Snapshot = exports.Snapshot = function () {
+  function Snapshot(cache, renderer) {
+    _classCallCheck(this, Snapshot);
+
+    this.cache = cache;
+    this.renderer = renderer;
+  }
+
+  _createClass(Snapshot, [{
+    key: 'cachePage',
+    value: function cachePage() {
+      var clonedBody = this.renderer.cloneBody();
+      return this.cache.set(this.currentPageID(), clonedBody);
+    }
+  }, {
+    key: 'currentPageID',
+    value: function currentPageID() {
+      return 'snapshot.' + new _url2.default(document.location).toString();
+    }
+  }, {
+    key: 'isCurrentPageCached',
+    value: function isCurrentPageCached() {
+      return this.getCurrentPageCache() != null;
+    }
+  }, {
+    key: 'getCurrentPageCache',
+    value: function getCurrentPageCache() {
+      return this.cache.get(this.currentPageID());
+    }
+  }]);
+
+  return Snapshot;
+}();
+
+},{"./url":13}],13:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -915,7 +1480,7 @@ var Url = function () {
 
 module.exports = Url;
 
-},{"./encoding":2}],7:[function(require,module,exports){
+},{"./encoding":5}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1050,4 +1615,115 @@ function extractAndUpdateTitle(html) {
     }
 }
 
-},{}]},{},[4]);
+},{}],15:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Visit = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _url = require('./url');
+
+var _url2 = _interopRequireDefault(_url);
+
+var _request = require('./request');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Visit = exports.Visit = function () {
+  function Visit(locflow, url) {
+    var opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+    _classCallCheck(this, Visit);
+
+    this.locflow = locflow;
+    this.url = new _url2.default(url);
+    this.action = opts.action || Visit.ADVANCE;
+    this.state = 'initialized';
+    this.timing = {};
+    this.propose();
+  }
+
+  _createClass(Visit, [{
+    key: 'propose',
+    value: function propose() {
+      this.locflow.adapter.visitProposed(this);
+    }
+  }, {
+    key: 'start',
+    value: function start() {
+      this.state = 'started';
+      this._recordTiming('start');
+      this.locflow.adapter.visitRequestStarted(this);
+      this.request = _request.Request.GET(this.url);
+      this.request.on('error', this._onRequestError.bind(this));
+      this.request.on('success', this._onRequestSuccess.bind(this));
+      this.request.on('timeout', this._onRequestTimeout.bind(this));
+    }
+  }, {
+    key: '_onRequestSuccess',
+    value: function _onRequestSuccess(html, statusCode) {
+      this.locflow.adapter.visitRequestCompleted();
+    }
+  }, {
+    key: '_onRequestError',
+    value: function _onRequestError(html, statusCode) {
+      this.locflow.adapter.visitRequestFailedWithStatusCode(this, statusCode);
+    }
+  }, {
+    key: '_onRequestTimeout',
+    value: function _onRequestTimeout() {}
+  }, {
+    key: 'complete',
+    value: function complete() {
+      this.state = 'completed';
+      this._recordTiming('complete');
+    }
+  }, {
+    key: 'fail',
+    value: function fail() {
+      this.state = 'failed';
+    }
+  }, {
+    key: 'abort',
+    value: function abort() {
+      this.state = 'aborted';
+      if (this.request) this.request.abort();
+      this.locflow.adapter.visitRequestAborted(this);
+    }
+  }, {
+    key: 'duration',
+    value: function duration() {
+      return this.timing['complete'] - this.timing['start'];
+    }
+  }, {
+    key: 'changeHistory',
+    value: function changeHistory() {
+      if (this.action === Visit.ADVANCE) {
+        return window.history.pushState({ locflow: true }, null, this.url.path);
+      }
+
+      if (this.action === Visit.REPLACE) {
+        return window.history.replaceState({ locflow: true }, null, this.url.path);
+      }
+    }
+  }, {
+    key: '_recordTiming',
+    value: function _recordTiming(step) {
+      this.timing[step] = new Date().getTime();
+    }
+  }]);
+
+  return Visit;
+}();
+
+Visit.ADVANCE = 'advance';
+Visit.REPLACE = 'replace';
+Visit.RESTORE = 'restore';
+
+},{"./request":11,"./url":13}]},{},[7]);

@@ -58,8 +58,17 @@ describe('Cache specs', () => {
   it('finds all caches in a namespace', () => {
     cache.set('user.name', 'Luiz')
     cache.set('user.email', 'luizpvasc@gmail.com')
-    let values = cache.getAll('user')
+    let values = cache.getInNamespace('user')
     expect(values).to.eql({'name': 'Luiz', 'email': 'luizpvasc@gmail.com'})
+  })
+
+  it('counts all values in a namespace', () => {
+    expect(cache.countInNamespace('user')).to.eq(0)
+    cache.set('user.name', 'Luiz')
+    expect(cache.countInNamespace('user')).to.eq(1)
+    cache.set('user.age', 23)
+    cache.set('user.attrs', {'foo': 'bar', 'qux': 'tro'})
+    expect(cache.countInNamespace('user')).to.eq(3)
   })
 
   it('stores the properties of an object when calling it with the first argument', () => {

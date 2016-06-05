@@ -41,7 +41,7 @@ export class Cache extends EventEmitter {
     return this.data[key]
   }
 
-  getAll(namespace) {
+  getInNamespace(namespace) {
     namespace += '.'
     let keys = Object.keys(this.data)
     let values = {}
@@ -52,6 +52,10 @@ export class Cache extends EventEmitter {
       }
     })
     return values
+  }
+
+  countInNamespace(namespace) {
+    return Object.keys(this.getInNamespace(namespace)).length
   }
 
   has(key) {

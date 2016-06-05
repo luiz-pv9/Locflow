@@ -3,7 +3,7 @@ import {LocflowDef} from '../src/locflow'
 import Url from '../src/url'
 const Locflow = new LocflowDef()
 
-describe.only('Visit specs', () => {
+describe('Visit specs', () => {
   let xhr, requests
   beforeEach(() => {
     xhr = sinon.useFakeXMLHttpRequest()
@@ -114,9 +114,32 @@ describe.only('Visit specs', () => {
       expect(Locflow.adapter.visitRequestStarted.called).to.be.true
     })
 
+    it('calls visitRequestAborted in the adapter', () => {
+      Locflow.adapter.visitRequestAborted = sinon.spy(Locflow.adapter.visitRequestAborted)
+      let visit = Locflow.visit('/home')
+      visit.start()
+      visit.abort()
+      expect(Locflow.adapter.visitRequestAborted.called).to.be.true
+    })
+
     it('calls visitRequestProgressed in the adapter')
-    it('calls visitRequestCompleted in the adapter')
-    it('calls visitCompleted in the adapter')
-    it('calls visitRequestFailedWithStatusCode in the adapter')
+
+    it('calls visitRequestCompleted in the adapter', () => {
+      Locflow.adapter.visitRequestCompleted = sinon.spy(Locflow.adapter.visitRequestCompleted)
+      let visit = Locflow.visit('/home')
+      visit.start()
+      requests[0].respond(200, {}, '<html></html>')
+      expect(Locflow.adapter.visitRequestCompleted.called).to.be.true
+    })
+
+    it('calls visitRequestFailedWithStatusCode in the adapter', () => {
+      Locflow.adapter.visitRequestFailedWithStatusCode = sinon.spy(
+        Locflow.adapter.visitRequestFailedWithStatusCode
+      )
+      let visit = Locflow.visit('/home')
+      visit.start()
+      requests[0].respond(500, {}, '<html></html>')
+      expect(Locflow.adapter.visitRequestFailedWithStatusCode.called).to.be.true
+    })
   })
 })

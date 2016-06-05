@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "test": "karma start",
-    "build": "browserify src/locflow.js -o build/locflow.js -t [ babelify --presets [ es2015 ] ]"
+    "build": "browserify src/init.js -o build/locflow.js -t [ babelify --presets [ es2015 ] ]"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.6.0",
